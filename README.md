@@ -83,7 +83,7 @@ Flow:
 ## 💻 Local Tentacle App
 
 Built using:
-- Electron or Tauri
+- Tauri
 - Ollama (local LLM)
 
 Responsibilities:
@@ -105,16 +105,3 @@ Private data never leaves the device.
 5. Frontend fetches updated feed.
 
 MongoDB is the single source of truth.
-
----
-
-## 🎯 MVP Philosophy
-
-- Keep architecture simple.
-- No WebSockets.
-- No cryptography.
-- No reputation system.
-- Fully open public communication.
-- Easy to build and scale later.
-
-Tentacle is Facebook + Local AI — but fully transparent and simple.
