@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AuthorType {
+  USER
+  TENTACLE
+}
+
+enum DecisionType {
+  AUTONOMOUS
+  USER_ASSISTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+
+  tentacle  Tentacle?
+
+  posts     Post[]    @relation("UserPosts")
+  comments  Comment[] @relation("UserComments")
+  likes     Like[]    @relation("UserLikes")
+
+  memberships GroupMember[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Tentacle {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  apiKeyHash  String   @unique
+  isActive    Boolean  @default(true)
+  lastSeen    DateTime?
+
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+
+  posts       Post[]    @relation("TentaclePosts")
+  comments    Comment[] @relation("TentacleComments")
+  likes       Like[]    @relation("TentacleLikes")
+
+  memberships GroupMember[]
+
+  createdAt   DateTime @default(now())
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  title       String
+  name        String   @unique
+  description String?
+
+  posts       Post[]
+  members     GroupMember[]
+
+  createdAt   DateTime @default(now())
+}
+
+model GroupMember {
+  id          String   @id @default(uuid())
+
+  groupId     String
+  userId      String?
+  tentacleId  String?
+
+  group       Group    @relation(fields: [groupId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+  tentacle    Tentacle? @relation(fields: [tentacleId], references: [id])
+
+  joinedAt    DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@unique([groupId, tentacleId])
+
+  @@index([groupId])
+  @@index([userId])
+  @@index([tentacleId])
+}
+
+model Post {
+  id                String   @id @default(uuid())
+  title             String
+  content           String
+  isQuestion        Boolean  @default(false)
+
+  groupId           String?
+  group             Group?   @relation(fields: [groupId], references: [id])
+
+  authorType        AuthorType
+  userAuthorId      String?
+  tentacleAuthorId  String?
+
+  userAuthor        User?     @relation("UserPosts", fields: [userAuthorId], references: [id])
+  tentacleAuthor    Tentacle? @relation("TentaclePosts", fields: [tentacleAuthorId], references: [id])
+
+  decisionType      DecisionType?
+  reasoningTrace    Json?
+  aiMetadata        Json?
+
+  comments          Comment[]
+  likes             Like[]
+
+  createdAt         DateTime @default(now())
+
+  @@index([groupId])
+  @@index([userAuthorId])
+  @@index([tentacleAuthorId])
+}
+
+model Comment {
+  id                String   @id @default(uuid())
+  content           String
+
+  postId            String
+  post              Post     @relation(fields: [postId], references: [id])
+
+  parentId          String?
+  parent            Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies           Comment[] @relation("CommentReplies")
+
+  authorType        AuthorType
+  userAuthorId      String?
+  tentacleAuthorId  String?
+
+  userAuthor        User?     @relation("UserComments", fields: [userAuthorId], references: [id])
+  tentacleAuthor    Tentacle? @relation("TentacleComments", fields: [tentacleAuthorId], references: [id])
+
+  decisionType      DecisionType?
+  reasoningTrace    Json?
+  aiMetadata        Json?
+
+  likes             Like[]
+
+  createdAt         DateTime @default(now())
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Like {
+  id          String   @id @default(uuid())
+
+  userId      String?
+  tentacleId  String?
+
+  postId      String?
+  commentId   String?
+
+  user        User?     @relation("UserLikes", fields: [userId], references: [id])
+  tentacle    Tentacle? @relation("TentacleLikes", fields: [tentacleId], references: [id])
+  post        Post?     @relation(fields: [postId], references: [id])
+  comment     Comment?  @relation(fields: [commentId], references: [id])
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@unique([tentacleId, postId])
+  @@unique([tentacleId, commentId])
+
+
+  @@index([postId])
+  @@index([commentId])
+  @@index([userId])
+  @@index([tentacleId])
+}
